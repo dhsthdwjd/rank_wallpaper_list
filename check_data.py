@@ -3,13 +3,19 @@
 
 이 파일이 있는 폴더 아래의 catalog.json 폴더(KPOP, ACTOR 등)를 모두 검사한다.
 1. catalog.json의 Pinterest JPG 대표 사진을 474x로 바꾼다. (--dry-run이면 바꾸지 않음)
-2. 모든 json의 문법과 catalog, groups의 양식을 검사한다. groups는 고치지 않는다.
+2. groups 파일을 고친다. (--dry-run이면 바꾸지 않음)
+   - Pinterest 736x 주소는 originals로 바꾼다.
+   - 같은 json 안에서 중복된 이미지는 첫 번째만 남기고 지운다.
+   - premium이 하나도 없으면 무작위 20%를 true로 바꾼다.
+   - 줄 양식을 { "name": ..., "premium": false }, 형태로 맞춘다.
+3. 모든 json의 문법과 catalog, groups의 양식을 검사한다.
 오류가 있으면 종료 코드 1을 돌려준다.
 
 사용: python3 check_data.py [--dry-run]
 """
 import argparse
 import json
+import random
 import re
 import sys
 from pathlib import Path
@@ -21,6 +27,8 @@ GROUP_KEYS = {"name", "url", "categories", "premium"}
 IMAGE_URL = re.compile(r"^https://i\.pinimg\.com/[^\s\"]+\.(jpe?g|png|webp)(\?[^\s\"]*)?$", re.IGNORECASE)
 PINIMG_JPG = re.compile(r"(https://i\.pinimg\.com/)[^/\"\s]+/([^\"\s?#]+\.jpg)", re.IGNORECASE)
 HASH = re.compile(r"[0-9a-f]{32}")
+PREMIUM_RATIO = 0.2
+PINIMG_736 = re.compile(r"^(https://i\.pinimg\.com/)736x/")
 
 
 def image_key(url):
@@ -58,6 +66,53 @@ def fix_catalog_previews(path, dry_run):
     if count and not dry_run:
         path.write_text(updated, encoding="utf-8", newline="\n")
     return count
+
+
+def format_group(rows):
+    """{ "name": ..., "premium": false } 한 줄씩, 탭 없이 쓰는 기본 양식."""
+    lines = ("{ " + ", ".join(f"{json.dumps(k)}: {json.dumps(row[k], ensure_ascii=False)}"
+                              for k in ("name", "url", "categories", "premium")) + " }" for row in rows)
+    return "[\n" + ",\n".join(lines) + "\n]\n"
+
+
+def fix_group(path, dry_run):
+    """같은 파일 안의 중복 이미지를 지우고(첫 번째만 남김), 유료가 없으면 무작위 20%를 유료로 하고,
+    양식을 기본 양식으로 맞춘다. 양식이 예상과 다르면 건드리지 않고 check_group에 맡긴다."""
+    text = path.read_text(encoding="utf-8")
+    rows = json.loads(text)
+    if not isinstance(rows, list) or not rows:
+        return None
+    for row in rows:
+        if (not isinstance(row, dict) or set(row) != GROUP_KEYS or not isinstance(row["premium"], bool)
+                or not isinstance(row["url"], str) or not IMAGE_URL.match(row["url"])):
+            return None
+    originals = 0
+    for row in rows:
+        url = PINIMG_736.sub(r"\1originals/", row["url"])
+        originals += url != row["url"]
+        row["url"] = url
+    kept, keys, removed = [], set(), 0
+    for row in rows:
+        key = image_key(row["url"])
+        if key in keys:
+            removed += 1
+            continue
+        keys.add(key)
+        kept.append(row)
+    premium = 0
+    if not any(row["premium"] for row in kept):
+        premium = round(len(kept) * PREMIUM_RATIO)
+        if 0 < premium < len(kept):
+            for index in random.sample(range(len(kept)), premium):
+                kept[index]["premium"] = True
+        else:
+            premium = 0
+    updated = format_group(kept)
+    if updated == text:
+        return None
+    if not dry_run:
+        path.write_text(updated, encoding="utf-8", newline="\n")
+    return originals, removed, premium
 
 
 def check_catalog(path, errors):
@@ -151,13 +206,35 @@ def check_folder(folder, dry_run, errors, warnings):
             errors.append(f"{folder.name}: catalog의 '{group_id}' 그룹 파일이 없습니다.")
     for stem in sorted(set(files) - set(ids)):
         errors.append(f"{folder.name}/groups/{stem}.json: catalog에 없는 파일입니다.")
+    group_changes = []
+    for stem in sorted(files):
+        try:
+            result = fix_group(files[stem], dry_run)
+        except (OSError, ValueError):
+            continue  # check_group가 같은 파일의 오류를 기록한다.
+        if result:
+            originals, removed, premium = result
+            notes = [f"736x→originals {originals}장"] if originals else []
+            notes += [f"중복 {removed}장 삭제"] if removed else []
+            notes += [f"유료 20% {premium}장"] if premium else []
+            group_changes.append((stem, ", ".join(notes + ["양식 정리"])))
     seen = {}
+    before = len(warnings), len(errors)
     images = sum(check_group(files[stem], errors, warnings, seen) for stem in sorted(files))
-    return changed, len(ids), images
+    if dry_run and group_changes:
+        # 고칠 예정인 중복·유료 없음은 --dry-run에서 오류/경고로 보여 주지 않는다.
+        prefixes = tuple(f"{files[stem].relative_to(ROOT)} " for stem, _ in group_changes)
+        prefixes += tuple(f"{files[stem].relative_to(ROOT)}:" for stem, _ in group_changes)
+
+        def planned(line):
+            return line.startswith(prefixes)
+        warnings[before[0]:] = [w for w in warnings[before[0]:] if not (w.endswith("유료 이미지가 없습니다.") and planned(w))]
+        errors[before[1]:] = [e for e in errors[before[1]:] if not ("같은 이미지가" in e and planned(e))]
+    return changed, len(ids), images, group_changes
 
 
 def main():
-    parser = argparse.ArgumentParser(description="catalog.json을 474x로 바꾸고 데이터 오류를 검사합니다.")
+    parser = argparse.ArgumentParser(description="catalog.json을 474x로, 유료 없는 그룹을 20% 유료로 바꾸고 데이터 오류를 검사합니다.")
     parser.add_argument("--dry-run", action="store_true", help="파일을 바꾸지 않고 검사만 합니다.")
     args = parser.parse_args()
 
@@ -166,9 +243,11 @@ def main():
     if not folders:
         errors.append("catalog.json이 있는 폴더를 찾지 못했습니다.")
     for folder in folders:
-        changed, groups, images = check_folder(folder, args.dry_run, errors, warnings)
+        changed, groups, images, group_changes = check_folder(folder, args.dry_run, errors, warnings)
         action = "변경 예정" if args.dry_run else "변경"
         print(f"{folder.name}: 그룹 {groups}개, 이미지 {images}장, 474x {action} {changed}개")
+        for stem, note in group_changes:
+            print(f"  {stem}.json {action}: {note}")
 
     # catalog와 groups 외의 json(rankings, 원본 등)은 문법만 본다.
     checked = 0
