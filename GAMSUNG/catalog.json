@@ -1,4 +1,6 @@
 [
+{ "id": "Winter", "name": "Winter", "name_kor": "겨울", "type": "theme", "preview1": "https://i.pinimg.com/474x/f2/4d/05/f24d05bfd87ac85010f23d1e16292f04.jpg" },
+{ "id": "Christmas", "name": "Christmas", "name_kor": "크리스마스", "type": "theme", "preview1": "https://i.pinimg.com/474x/fd/7e/1c/fd7e1ca2dc5309449863eb390b5d1e39.jpg" },
 { "id": "3D", "name": "3D", "name_kor": "3D 입체", "type": "theme", "preview1": "https://i.pinimg.com/474x/e8/a3/5e/e8a35ee346290ee9875a8ebc0cd32112.jpg" },
 { "id": "Aesthetic", "name": "Aesthetic", "name_kor": "감성 배경화면", "type": "theme", "preview1": "https://i.pinimg.com/474x/46/0a/ee/460aee30ee108c899b0e0928c3fcdc9e.jpg" },
 { "id": "Aesthetic Food", "name": "Aesthetic Food", "name_kor": "감성 음식사진", "type": "theme", "preview1": "https://i.pinimg.com/474x/18/eb/09/18eb09200a8745be329cad9bfdd294d7.jpg" },
