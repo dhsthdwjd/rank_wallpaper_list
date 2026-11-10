@@ -6,7 +6,7 @@
 2. groups 파일을 고친다. (--dry-run이면 바꾸지 않음)
    - Pinterest 736x 주소는 originals로 바꾼다.
    - 같은 json 안에서 중복된 이미지는 첫 번째만 남기고 지운다.
-   - premium이 하나도 없으면 무작위 20%를 true로 바꾼다.
+   - premium이 하나도 없으면 무작위 30%를 true로 바꾼다.
    - 줄 양식을 { "name": ..., "premium": false }, 형태로 맞춘다.
 3. 모든 json의 문법과 catalog, groups의 양식을 검사한다.
 오류가 있으면 종료 코드 1을 돌려준다.
@@ -27,7 +27,7 @@ GROUP_KEYS = {"name", "url", "categories", "premium"}
 IMAGE_URL = re.compile(r"^https://i\.pinimg\.com/[^\s\"]+\.(jpe?g|png|webp)(\?[^\s\"]*)?$", re.IGNORECASE)
 PINIMG_JPG = re.compile(r"(https://i\.pinimg\.com/)[^/\"\s]+/([^\"\s?#]+\.jpg)", re.IGNORECASE)
 HASH = re.compile(r"[0-9a-f]{32}")
-PREMIUM_RATIO = 0.2
+PREMIUM_RATIO = 0.3
 PINIMG_736 = re.compile(r"^(https://i\.pinimg\.com/)736x/")
 
 
@@ -76,7 +76,7 @@ def format_group(rows):
 
 
 def fix_group(path, dry_run):
-    """같은 파일 안의 중복 이미지를 지우고(첫 번째만 남김), 유료가 없으면 무작위 20%를 유료로 하고,
+    """같은 파일 안의 중복 이미지를 지우고(첫 번째만 남김), 유료가 없으면 무작위 30%를 유료로 하고,
     양식을 기본 양식으로 맞춘다. 양식이 예상과 다르면 건드리지 않고 check_group에 맡긴다."""
     text = path.read_text(encoding="utf-8")
     rows = json.loads(text)
@@ -216,7 +216,7 @@ def check_folder(folder, dry_run, errors, warnings):
             originals, removed, premium = result
             notes = [f"736x→originals {originals}장"] if originals else []
             notes += [f"중복 {removed}장 삭제"] if removed else []
-            notes += [f"유료 20% {premium}장"] if premium else []
+            notes += [f"유료 30% {premium}장"] if premium else []
             group_changes.append((stem, ", ".join(notes + ["양식 정리"])))
     seen = {}
     before = len(warnings), len(errors)
@@ -234,7 +234,7 @@ def check_folder(folder, dry_run, errors, warnings):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="catalog.json을 474x로, 유료 없는 그룹을 20% 유료로 바꾸고 데이터 오류를 검사합니다.")
+    parser = argparse.ArgumentParser(description="catalog.json을 474x로, 유료 없는 그룹을 30% 유료로 바꾸고 데이터 오류를 검사합니다.")
     parser.add_argument("--dry-run", action="store_true", help="파일을 바꾸지 않고 검사만 합니다.")
     args = parser.parse_args()
 
