@@ -1,4 +1,5 @@
 [
+{ "id": "G-DRAGON", "name": "G-DRAGON", "name_kor": "지드래곤", "type": "solo", "preview1": "https://i.pinimg.com/474x/26/03/51/26035179d0331e13f2e36765d9d24777.jpg" },
 { "id": "EXO", "name": "EXO", "name_kor": "엑소", "type": "boy", "preview1": "https://i.pinimg.com/474x/35/51/4a/35514ad1800ff064c4666120833ea091.jpg" },
 { "id": "&TEAM", "name": "&TEAM", "name_kor": "앤팀", "type": "boy", "preview1": "https://i.pinimg.com/474x/8f/eb/1b/8feb1b8ab418fc6d1e307d0a903110ed.jpg" },
 { "id": "AHOF", "name": "AHOF", "name_kor": "아홉", "type": "boy", "preview1": "https://i.pinimg.com/474x/ef/2d/a3/ef2da3613cd6438f9c37556c74979949.jpg" },
