@@ -1,4 +1,5 @@
 [
+{ "id": "A2O LITE", "name": "A2O LITE", "name_kor": "에이투오 라이트", "type": "solo", "preview1": "https://i.pinimg.com/474x/df/af/f2/dfaff2aa45ef5170d4fce60a8afaf12c.jpg" },
 { "id": "G-DRAGON", "name": "G-DRAGON", "name_kor": "지드래곤", "type": "solo", "preview1": "https://i.pinimg.com/474x/26/03/51/26035179d0331e13f2e36765d9d24777.jpg" },
 { "id": "EXO", "name": "EXO", "name_kor": "엑소", "type": "boy", "preview1": "https://i.pinimg.com/474x/35/51/4a/35514ad1800ff064c4666120833ea091.jpg" },
 { "id": "&TEAM", "name": "&TEAM", "name_kor": "앤팀", "type": "boy", "preview1": "https://i.pinimg.com/474x/8f/eb/1b/8feb1b8ab418fc6d1e307d0a903110ed.jpg" },
